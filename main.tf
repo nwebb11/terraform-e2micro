@@ -36,7 +36,7 @@ data "google_client_openid_userinfo" "me" {}
 
 resource "google_compute_instance" "vm_instance" {
   name         = "terraform-instance"
-  machine_type = "e2-micro"
+  machine_type = "e2-highcpu-2"
   tags         = ["allow-ssh"]
 
   metadata = {
@@ -55,6 +55,21 @@ resource "google_compute_instance" "vm_instance" {
     access_config {
       nat_ip = google_compute_address.static_ip.address
     }
+  }
+
+  provisioner "remote-exec" {
+    connection {
+      host        = google_compute_address.static_ip.address
+      type        = "ssh"
+      user        = "terraform"
+      timeout     = "600s"
+      private_key = file(local_file.ssh_private_key_pem.filename)
+    }
+    inline = [
+      "sudo apt update",
+      "sudo DEBIAN_FRONTEND=noninteractive apt upgrade -y",
+      "sudo apt autoremove -y"
+    ]
   }
 }
 
